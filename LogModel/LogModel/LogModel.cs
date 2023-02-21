@@ -3,6 +3,17 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LogWatcher
 {
+    public enum LogLevel
+    {
+        Trace = 0,
+        Debug = 1,
+        Information = 2,
+        Warning = 3,
+        Error = 4,
+        Critical = 5,
+        None = 6
+    }   
+    
     //[Table("Log")]
     public class LogModel
     {
@@ -13,16 +24,5 @@ namespace LogWatcher
         public string? Module { get; set; }
         public LogLevel? Level { get; set; }
         public string? Message { get; set; }
-    }
-
-    public enum LogLevel
-    {
-        Trace = 0,
-        Debug = 1,
-        Information = 2,
-        Warning = 3,
-        Error = 4,
-        Critical = 5,
-        None = 6
     }
 }

@@ -16,10 +16,9 @@ using (var logDbContext = new LogDbContext())
     logDbContext.Database.EnsureCreated();
 }
 
-
 var app = builder.Build();
 
-app.MapHub<SignalRHub>("/current-time");
+app.MapHub<SignalRHub>("/ReceiveLog");
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -61,7 +60,7 @@ class LogDbContext : DbContext
 
 public class SignalRHub: Hub
 {
-    public async IAsyncEnumerable<DateTime>Streaming(CancellationToken cancellationToken)
+    public async IAsyncEnumerable<DateTime>ListeningForLog(CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {

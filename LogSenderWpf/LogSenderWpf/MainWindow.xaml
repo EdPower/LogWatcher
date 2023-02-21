@@ -1,0 +1,21 @@
+﻿<Window x:Class="LogSenderWpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LogSenderWpf"
+        mc:Ignorable="d"
+        Title="MainWindow" SizeToContent="WidthAndHeight" >
+    <Grid>
+        <DockPanel >
+            <StackPanel DockPanel.Dock="Top" Orientation="Vertical" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="10" >
+                <Label Content="Status:" HorizontalAlignment="Left" />
+                <TextBox  Name="textBoxStatus" HorizontalAlignment="Left" Width="200"  Height="200" ScrollViewer.VerticalScrollBarVisibility="Auto" IsReadOnly="True" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" HorizontalAlignment="Center" VerticalAlignment="Top">
+                <Button Name="buttonStart" Content="Start" Width="50" Height="25" Margin="10" Click="buttonStart_Click" />
+                <Button Name="buttonStop" Content="Stop" Width="50" Height="25" Margin="10" Click="buttonStop_Click" />
+            </StackPanel>
+        </DockPanel>
+    </Grid>
+</Window>

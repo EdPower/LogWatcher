@@ -7,23 +7,23 @@ var client = new HttpClient();
 
 client.DefaultRequestHeaders.Accept.Clear();
 
-await AddRecords(100, 100);
+await SendLogRecord(100, 100);
 
 await ExecuteAsync();
 
 static async Task ExecuteAsync()
 {
-    var uri = "https://localhost:7297/current-time";
+    var uri = "https://localhost:7297/ReceiveLog";
     await using var connection = new HubConnectionBuilder().WithUrl(uri).Build();
     await connection.StartAsync();
 
-    await foreach (var date in connection.StreamAsync<DateTime>("Streaming"))
+    await foreach (var date in connection.StreamAsync<DateTime>("ListeningForLog"))
     {
         Console.WriteLine(date);
     }
 }
 
-async Task AddRecords(int count, int delayMs)
+async Task SendLogRecord(int count, int delayMs)
 {
     for (int i = 0; i < count; i++)
     {
@@ -37,6 +37,6 @@ async Task AddRecords(int count, int delayMs)
 
         Console.WriteLine(responseContent);
 
-        Task.Delay(delayMs);
+        await Task.Delay(delayMs);
     }
 }
