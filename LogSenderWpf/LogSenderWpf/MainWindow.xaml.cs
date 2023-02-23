@@ -17,6 +17,7 @@ using System.Windows.Shapes;
 using LogWatcher;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Windows.Media.Animation;
+using System.Threading;
 
 namespace LogSenderWpf
 {
@@ -26,7 +27,7 @@ namespace LogSenderWpf
     public partial class MainWindow : Window
     {
         HttpClient client;
-        bool isSending = false;
+        volatile bool isSending = false;
 
         public MainWindow()
         {
@@ -35,9 +36,10 @@ namespace LogSenderWpf
             client.DefaultRequestHeaders.Accept.Clear();
         }
 
-        private void buttonStart_Click(object sender, RoutedEventArgs e)
+        private async void buttonStart_Click(object sender, RoutedEventArgs e)
         {
             isSending = true;
+            await StartSending();
         }
 
         private void buttonStop_Click(object sender, RoutedEventArgs e)
@@ -51,12 +53,21 @@ namespace LogSenderWpf
             while (isSending)
             {
                 var record = CreateRecord();
-                var result = SendLogRecord(url, record).Result;
+                var result = await SendLogRecord(url, record);
                 if (result != null)
                 {
-                    textBoxStatus.Text += result + Environment.NewLine;
+                    textBoxStatus.Text += record.SentDt + " - " + result.StatusCode + Environment.NewLine;
                 }
             }
+        }
+
+        private async Task<HttpResponseMessage> SendLogRecord(string url, LogModel record)
+        {
+            using HttpResponseMessage response = await client.PostAsync(url, JsonContent.Create(record));
+
+            response.EnsureSuccessStatusCode();
+
+            return response;
         }
 
         private LogModel CreateRecord()
@@ -70,16 +81,6 @@ namespace LogSenderWpf
                 Level = LogLevel.Information
             };
             return logModel;
-        }
-
-        private async Task<string> SendLogRecord(string url, LogModel record)
-        {
-            using HttpResponseMessage response = await client.PostAsync(url, JsonContent.Create(record));
-
-            response.EnsureSuccessStatusCode();
-            var responseContent = await response.Content.ReadAsStringAsync();
-
-            return responseContent;
         }
     }
 }

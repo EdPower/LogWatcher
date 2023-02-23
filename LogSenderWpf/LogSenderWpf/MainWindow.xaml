@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:LogSenderWpf"
         mc:Ignorable="d"
-        Title="MainWindow" SizeToContent="WidthAndHeight" >
+        Title="MainWindow" Width="300" Height="350" >
     <Grid>
         <DockPanel >
             <StackPanel DockPanel.Dock="Top" Orientation="Vertical" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="10" >

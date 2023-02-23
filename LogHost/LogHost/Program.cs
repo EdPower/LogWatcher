@@ -27,7 +27,7 @@ app.UseRouting();
 
 app.MapGet("/", async (LogDbContext db) => await db.Log.ToListAsync());
 app.MapGet("/since", async (LogDbContext db, DateTime FromDt) => await db.Log.Where(n => n.SentDt >= FromDt).ToListAsync());
-app.MapPost("/add", (LogDbContext db, LogModel logModel) => { db.Log.Add(logModel); db.SaveChanges(); return Results.Ok; });
+app.MapPost("/add", (LogDbContext db, LogModel logModel) => { db.Log.Add(logModel); db.SaveChanges(); });
 
 app.Run();
 
@@ -58,9 +58,9 @@ class LogDbContext : DbContext
     }
 }
 
-public class SignalRHub: Hub
+public class SignalRHub : Hub
 {
-    public async IAsyncEnumerable<DateTime>ListeningForLog(CancellationToken cancellationToken)
+    public async IAsyncEnumerable<DateTime> ListeningForLog([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
