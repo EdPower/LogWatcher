@@ -1,14 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.EntityFrameworkCore.Storage;
-using System.Reflection.Metadata;
 
-var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("log") ?? "Data source=log.db";
-builder.Services.AddSqlite<LogDbContext>(connectionString);
+    var builder = WebApplication.CreateBuilder(args);
+
+    var connectionString = builder.Configuration.GetConnectionString("log") ?? "Data source=log.db";
+    builder.Services.AddSqlite<LogDbContext>(connectionString);
 builder.Services.AddSignalR();
 
 using (var logDbContext = new LogDbContext())
@@ -30,33 +25,6 @@ app.MapGet("/since", async (LogDbContext db, DateTime FromDt) => await db.Log.Wh
 app.MapPost("/add", (LogDbContext db, LogModel logModel) => { db.Log.Add(logModel); db.SaveChanges(); });
 
 app.Run();
-
-class LogDbContext : DbContext
-{
-    public LogDbContext() { }
-    public LogDbContext(DbContextOptions options) : base(options) { }
-
-    public DbSet<LogModel> Log { get; set; } = null!; // initialize with null-forgiving operator to prevent compiler warning 
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.UseSqlite("Filename=log.db");
-        base.OnConfiguring(optionsBuilder);
-    }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        // Map table names
-        modelBuilder.Entity<LogModel>().ToTable("Log");
-        modelBuilder.Entity<LogModel>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Id).IsUnique();
-            entity.HasIndex(e => e.SentDt);
-        });
-        base.OnModelCreating(modelBuilder);
-    }
-}
 
 public class SignalRHub : Hub
 {
