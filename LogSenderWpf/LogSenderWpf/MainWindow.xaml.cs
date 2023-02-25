@@ -18,6 +18,7 @@ using LogWatcher;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Windows.Media.Animation;
 using System.Threading;
+using LogWatcher.Models;
 
 namespace LogSenderWpf
 {
@@ -56,8 +57,17 @@ namespace LogSenderWpf
                 var result = await SendLogRecord(url, record);
                 if (result != null)
                 {
-                    textBoxStatus.Text += record.SentDt + " - " + result.StatusCode + Environment.NewLine;
+                    AddStatus(record.SentDt + " - " + result.StatusCode);
                 }
+            }
+        }
+
+        private void AddStatus(string status)
+        {
+            listBoxStatus.Items.Insert(0, status);
+            if (listBoxStatus.Items.Count > 20)
+            {
+                listBoxStatus.Items.RemoveAt(19);
             }
         }
 

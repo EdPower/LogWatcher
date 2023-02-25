@@ -23,7 +23,7 @@ app.UseRouting();
 app.MapGet("/", async (LogDbContext db) => await db.Log.ToListAsync());
 app.MapGet("/since", async (LogDbContext db, DateTime FromDt) => await db.Log.Where(n => n.SentDt >= FromDt).ToListAsync());
 app.MapPost("/add", (LogDbContext db, LogModel logModel) => { db.Log.Add(logModel); db.SaveChanges(); });
-
+app.MapDelete("/delete", async (LogDbContext db)=>await db.Log.re)
 app.Run();
 
 public class SignalRHub : Hub
