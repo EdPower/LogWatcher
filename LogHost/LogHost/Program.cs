@@ -1,9 +1,9 @@
 
 
-    var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-    var connectionString = builder.Configuration.GetConnectionString("log") ?? "Data source=log.db";
-    builder.Services.AddSqlite<LogDbContext>(connectionString);
+var connectionString = builder.Configuration.GetConnectionString("log") ?? "Data source=log.db";
+builder.Services.AddSqlite<LogDbContext>(connectionString);
 builder.Services.AddSignalR();
 
 using (var logDbContext = new LogDbContext())
@@ -20,10 +20,31 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// get all log records
 app.MapGet("/", async (LogDbContext db) => await db.Log.ToListAsync());
+
+// get all log records since FromDt
 app.MapGet("/since", async (LogDbContext db, DateTime FromDt) => await db.Log.Where(n => n.SentDt >= FromDt).ToListAsync());
-app.MapPost("/add", (LogDbContext db, LogModel logModel) => { db.Log.Add(logModel); db.SaveChanges(); });
-app.MapDelete("/delete", async (LogDbContext db)=>await db.Log.re)
+
+// add log record
+app.MapPost("/add", async (LogDbContext db, LogModel logModel) =>
+{
+    await db.Log.AddAsync(logModel);
+    await db.SaveChangesAsync();
+});
+
+// delete all log records since FromDt
+app.MapDelete("/delete/since", async (LogDbContext db, DateTime FromDt) =>
+{
+    await  db.Log.Where(n => n.SentDt >= FromDt).ExecuteDeleteAsync();
+});
+
+
+// delete first count records
+app.MapDelete("/delete/first", async (LogDbContext db, int count) =>
+{
+    await db.Log.Take(count).ExecuteDeleteAsync();
+});
 app.Run();
 
 public class SignalRHub : Hub
