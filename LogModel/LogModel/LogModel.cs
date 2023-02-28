@@ -20,7 +20,7 @@ namespace LogWatcher.Models
         [Key]
         public int Id { get; set; }
         public string? CustomerId { get; set; }
-        public DateTime? SentDt { get; set; }
+        public DateTime SentDt { get; set; }
         public string? Module { get; set; }
         public LogLevel? Level { get; set; }
         public string? Message { get; set; }
