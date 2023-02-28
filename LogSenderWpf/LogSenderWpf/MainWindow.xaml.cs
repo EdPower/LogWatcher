@@ -28,7 +28,7 @@ namespace LogSenderWpf
     public partial class MainWindow : Window
     {
         HttpClient client;
-        volatile bool isSending = false;
+        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
         public MainWindow()
         {
@@ -39,26 +39,36 @@ namespace LogSenderWpf
 
         private async void buttonStart_Click(object sender, RoutedEventArgs e)
         {
-            isSending = true;
-            await StartSending();
+            cancellationTokenSource = new CancellationTokenSource();
+            CancellationToken cancellationToken = cancellationTokenSource.Token;
+            buttonStart.IsEnabled = false;
+            buttonStop.IsEnabled = true;
+            await StartSending(cancellationToken);
         }
 
         private void buttonStop_Click(object sender, RoutedEventArgs e)
         {
-            isSending = false;
+            cancellationTokenSource.Cancel();
+            buttonStart.IsEnabled = true;
+            buttonStop.IsEnabled = false;
         }
 
-        private async Task StartSending()
+        private async Task StartSending(CancellationToken token)
         {
             var url = "https://localhost:7297/add";
-            while (isSending)
+            while (!token.IsCancellationRequested)
             {
                 var record = CreateRecord();
-                var result = await SendLogRecord(url, record);
-                if (result != null)
+                var (isSuccessful, errorString) = await SendLogRecord(url, record, token);
+                if (isSuccessful)
                 {
-                    AddStatus(record.SentDt + " - " + result.StatusCode);
+                    AddStatus(record.SentDt.ToString("yyyy-MM-dd HH:mm:ss") + " - sent");
                 }
+                else
+                {
+                    AddStatus(record.SentDt.ToString("yyyy-MM-dd HH:mm:ss") + " - " + errorString);
+                }
+                await Task.Delay(1000);
             }
         }
 
@@ -71,13 +81,18 @@ namespace LogSenderWpf
             }
         }
 
-        private async Task<HttpResponseMessage> SendLogRecord(string url, LogModel record)
+        private async Task<(bool, string)> SendLogRecord(string url, LogModel record, CancellationToken token)
         {
-            using HttpResponseMessage response = await client.PostAsync(url, JsonContent.Create(record));
-
-            response.EnsureSuccessStatusCode();
-
-            return response;
+            try
+            {
+                using HttpResponseMessage response = await client.PostAsync(url, JsonContent.Create(record), token);
+                response.EnsureSuccessStatusCode();
+                return (true, string.Empty);
+            }
+            catch (Exception ex)
+            {
+                return (false, ex.Message);
+            }
         }
 
         private LogModel CreateRecord()

@@ -7,15 +7,17 @@
         mc:Ignorable="d"
         Title="MainWindow" Width="400" Height="300" >
     <Grid>
-        <DockPanel>
-            <StackPanel DockPanel.Dock="Top" Height="150" Width="300" Orientation="Vertical" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="10" >
-                <Label Content="Status:" HorizontalAlignment="Left" />
-                <ListBox Name="listBoxStatus" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" DockPanel.Dock="Bottom" HorizontalAlignment="Center" VerticalAlignment="Top">
-                <Button Name="buttonStart" Content="Start" Width="50" Height="25" Margin="10" Click="buttonStart_Click" />
-                <Button Name="buttonStop" Content="Stop" Width="50" Height="25" Margin="10" Click="buttonStop_Click" />
-            </StackPanel>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <DockPanel Grid.Row="0" Margin="20" LastChildFill="True">
+            <Label Content="Status:" DockPanel.Dock="Top"  />
+            <ListBox Name="listBoxStatus" DockPanel.Dock="Top"/>
         </DockPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Button Name="buttonStart" Content="Start" Width="50" IsDefault="True" Height="25" Margin="10" Click="buttonStart_Click" />
+            <Button Name="buttonStop" Content="Stop" Width="50" IsCancel="True" IsEnabled="False" Height="25" Margin="10" Click="buttonStop_Click" />
+        </StackPanel>
     </Grid>
 </Window>
