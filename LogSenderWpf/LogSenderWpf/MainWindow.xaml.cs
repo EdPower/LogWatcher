@@ -62,13 +62,13 @@ namespace LogSenderWpf
                 var (isSuccessful, errorString) = await SendLogRecord(url, record, token);
                 if (isSuccessful)
                 {
-                    AddStatus(record.SentDt.ToString("yyyy-MM-dd HH:mm:ss") + " - sent");
+                    AddStatus(record.SentDt.ToString("yyyy-MM-dd HH:mm:ss") + " - " + record.Level.ToString());
                 }
                 else
                 {
                     AddStatus(record.SentDt.ToString("yyyy-MM-dd HH:mm:ss") + " - " + errorString);
                 }
-                await Task.Delay(1000);
+                await Task.Delay(500);
             }
         }
 
@@ -103,9 +103,22 @@ namespace LogSenderWpf
                 Message = "test",
                 Module = "module1",
                 SentDt = DateTime.Now,
-                Level = LogLevel.Information
+                Level = GetRandomLogLevel()
             };
             return logModel;
+        }
+
+        private static Random rnd = new Random();
+        private LogLevel GetRandomLogLevel()
+        {
+            return rnd.Next(1, 100) switch
+            {
+                > 0 and <= 2 => LogLevel.Critical,
+                > 2 and <= 7 => LogLevel.Error,
+                > 7 and <= 15 => LogLevel.Warning,
+                > 15 and <= 90 => LogLevel.Information,
+                _ => LogLevel.Trace,
+            };
         }
     }
 }

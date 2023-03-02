@@ -7,11 +7,10 @@ namespace LogWatcher.Models
     public enum LogLevel
     {
         Trace = 0,
-        Debug = 1,
-        Information = 2,
-        Warning = 4,
-        Error = 8,
-        Critical = 16
+        Information = 1,
+        Warning = 2,
+        Error = 4,
+        Critical = 8,
     }   
     
     //[Table("Log")]

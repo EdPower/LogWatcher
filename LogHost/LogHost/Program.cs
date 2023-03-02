@@ -68,7 +68,7 @@ app.MapDelete("/delete/before", async (LogDbContext db, DateTime fromDt) =>
     await transaction.CommitAsync();
 });
 
-// delete all log records
+// delete all log records (handy for testing)
 app.MapDelete("/delete/all", async (LogDbContext db) =>
 {
     await using var transaction = await db.Database.BeginTransactionAsync();
