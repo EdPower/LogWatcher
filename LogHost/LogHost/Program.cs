@@ -49,6 +49,9 @@ app.MapGet("/count/all", (LogDbContext db) => db.Log.Count());
 // get count of log records since fromDt
 app.MapGet("/count/since", (LogDbContext db, DateTime fromDt) => db.Log.Where(n => n.SentDt >= fromDt).Count());
 
+// get list of customers
+app.MapGet("/customers", async (LogDbContext db) => await db.Log.Select(n => n.CustomerId).Distinct().ToListAsync());
+
 // add log record
 app.MapPost("/add", async (LogDbContext db, LogModel logModel) =>
 {
