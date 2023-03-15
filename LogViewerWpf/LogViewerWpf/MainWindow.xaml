@@ -5,41 +5,46 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:LogViewerWpf"
         mc:Ignorable="d"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing" 
         Title="MainWindow" Height="500" Width="1000">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
-        <DockPanel Grid.Column="0">
-            <WrapPanel DockPanel.Dock="Top">
-                <Label Content="Customer" VerticalAlignment="Center"/>
-                <ComboBox Name="comboBoxCustomers" DockPanel.Dock="Top" Width="200" Height="20" Margin="10" VerticalAlignment="Center" />
-            </WrapPanel>
-            <Grid DockPanel.Dock="Top">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+        <DockPanel>
+            <DockPanel DockPanel.Dock="Top">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" >
+                    <Label Content="Customer:" VerticalAlignment="Center" Margin="10"/>
+                    <ComboBox Name="comboBoxCustomers" Width="200" Height="20" Margin="10" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right" >
+                    <Button Name="buttonStart" Content="Start" IsEnabled="True" Width="70" Margin="10" Click="buttonStart_Click"/>
+                    <Button Name="buttonStop" Content="Stop" IsEnabled="False" Width="70" Margin="10" Click="buttonStop_Click"/>
+                    <Label Content="Status:" VerticalAlignment="Center"  Margin="10"/>
+                    <TextBox Name="textBoxStatus" Width="200" VerticalAlignment="Center"  Margin="10"/>
+                </StackPanel>
+            </DockPanel>
+            <Border Margin="10" BorderBrush="Gray" BorderThickness="1">
+                <Grid DockPanel.Dock="Top">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                <DockPanel Grid.Column="0">
-                    <WrapPanel DockPanel.Dock="Top">
-                        <Label Content="Feed:" Margin="10" VerticalAlignment="Top"/>
-                        <CheckBox Name="checkBoxTrace" Content="Trace" Margin="10" IsChecked="True" VerticalAlignment="Center" />
-                        <CheckBox Name="checkBoxInformation" Content="Info" Margin="10" IsChecked="true"  VerticalAlignment="Center" />
-                        <CheckBox Name="checkBoxWarning" Content="Warning" Margin="10" IsChecked="true" VerticalAlignment="Center" />
-                        <CheckBox Name="checkBoxError" Content="Error" Margin="10" IsChecked="true" VerticalAlignment="Center" />
-                    </WrapPanel>
-                    <ListBox Name="listBoxFeed" Margin="10" DockPanel.Dock="Top"/>
-                </DockPanel>
-                <DockPanel Grid.Column="1">
-                    <Label Content="Warnings and Errors:" Margin="10" DockPanel.Dock="Top" VerticalAlignment="Center"/>
-                    <ListBox Name="listBoxErrors" Margin="10" DockPanel.Dock="Top"/>
-                </DockPanel>
-            </Grid>
-        </DockPanel>
-        <DockPanel Grid.Column="1">
-
+                    <DockPanel Grid.Column="0">
+                        <WrapPanel DockPanel.Dock="Top">
+                            <Label Content="Feed:" Margin="10" VerticalAlignment="Top"/>
+                            <CheckBox Name="checkBoxTrace" Content="Trace" Margin="10" IsChecked="True" VerticalAlignment="Center" />
+                            <CheckBox Name="checkBoxInformation" Content="Info" Margin="10" IsChecked="true"  VerticalAlignment="Center" />
+                            <CheckBox Name="checkBoxWarning" Content="Warning" Margin="10" IsChecked="true" VerticalAlignment="Center" />
+                            <CheckBox Name="checkBoxError" Content="Error" Margin="10" IsChecked="true" VerticalAlignment="Center" />
+                        </WrapPanel>
+                        <ListBox Name="listBoxFeed" Margin="10" DockPanel.Dock="Top"/>
+                    </DockPanel>
+                    <DockPanel Grid.Column="1">
+                        <Label Content="Warnings and Errors:" Margin="10" DockPanel.Dock="Top" VerticalAlignment="Center"/>
+                        <ListBox Name="listBoxErrors" Margin="10" DockPanel.Dock="Top"/>
+                    </DockPanel>
+                </Grid>
+            </Border>
         </DockPanel>
     </Grid>
 </Window>

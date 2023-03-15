@@ -1,3 +1,5 @@
+using LogWatcher.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("log") ?? "Data source=log.db";
@@ -83,11 +85,11 @@ app.Run();
 
 public class SignalRHub : Hub
 {
-    public async IAsyncEnumerable<DateTime> ListeningForLog([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    public async IAsyncEnumerable<LogModel> LogUpdates(string customer, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            yield return DateTime.Now;
+            yield return new LogModel() { CustomerId = customer, Level = LogWatcher.Models.LogLevel.Trace, Module = "heartbeat", SentDt = DateTime.Now, Message = "heartbeat" };
             await Task.Delay(1000, cancellationToken);
         }
     }

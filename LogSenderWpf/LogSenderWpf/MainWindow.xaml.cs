@@ -1,24 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http.Json;
+﻿using LogWatcher.Models;
+using System;
 using System.Net.Http;
-using System.Text;
+using System.Net.Http.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using LogWatcher;
-using Microsoft.AspNetCore.SignalR.Client;
-using System.Windows.Media.Animation;
-using System.Threading;
-using LogWatcher.Models;
 
 namespace LogSenderWpf
 {
@@ -113,8 +99,7 @@ namespace LogSenderWpf
         {
             return rnd.Next(1, 100) switch
             {
-                > 0 and <= 2 => LogLevel.Critical,
-                > 2 and <= 7 => LogLevel.Error,
+                > 0 and <= 7 => LogLevel.Error,
                 > 7 and <= 15 => LogLevel.Warning,
                 > 15 and <= 90 => LogLevel.Information,
                 _ => LogLevel.Trace,
