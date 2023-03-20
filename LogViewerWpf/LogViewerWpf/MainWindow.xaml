@@ -16,7 +16,7 @@
                     <ComboBox Name="comboBoxCustomers" Width="200" Height="20" Margin="10" VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right" >
-                    <Button Name="buttonStart" Content="Start" IsEnabled="True" Width="70" Margin="10" Click="buttonStart_Click"/>
+                    <Button Name="buttonStart" Content="Start" IsEnabled="False" Width="70" Margin="10" Click="buttonStart_Click"/>
                     <Button Name="buttonStop" Content="Stop" IsEnabled="False" Width="70" Margin="10" Click="buttonStop_Click"/>
                     <Label Content="Status:" VerticalAlignment="Center"  Margin="10"/>
                     <TextBox Name="textBoxStatus" Width="200" VerticalAlignment="Center"  Margin="10"/>

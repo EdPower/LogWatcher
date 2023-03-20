@@ -29,7 +29,7 @@ var timer = new System.Timers.Timer(TimeSpan.FromHours(1));
 timer.Elapsed += async (sender, e) =>
 {
     using var logDbContext = new LogDbContext();
-    logDbContext.Log.RemoveRange(logDbContext.Log.Where(n => n.SentDt > deleteAfterDate));
+    logDbContext.Log.RemoveRange(logDbContext.Log.Where(n => n.SentDt < deleteAfterDate));
     await logDbContext.SaveChangesAsync();
 };
 timer.Start();

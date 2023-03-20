@@ -7,6 +7,7 @@ using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,13 +37,19 @@ namespace LogViewerWpf
         int maxLinesInListBoxFeed = 20;
         HubConnection connection;
         bool closing = false;
+        string uri;
 
         public MainWindow()
         {
             client = new HttpClient();
             client.DefaultRequestHeaders.Accept.Clear();
             InitializeComponent();
-            var uri = "https://localhost:7297/ReceiveLog";
+            uri = "https://localhost:7297/ReceiveLog";
+            //BuildConnection(uri);
+        }
+
+        private void BuildConnection(string uri)
+        {
             connection = new HubConnectionBuilder()
                 .WithUrl(uri)
                 .WithAutomaticReconnect()
@@ -57,11 +64,7 @@ namespace LogViewerWpf
                     buttonStart.IsEnabled = false;
                     buttonStop.IsEnabled = false;
                 });
-                logUpdatesCancellationTokenSource.Cancel();
-                if (!closing)
-                {
-                    ConnectToHub();
-                }
+
                 return Task.CompletedTask;
             };
 
@@ -69,7 +72,7 @@ namespace LogViewerWpf
             {
                 this.Dispatcher.Invoke(() =>
                 {
-                    logUpdatesCancellationTokenSource.Cancel();
+                    //logUpdatesCancellationTokenSource.Cancel();
                     textBoxStatus.Text = "Reconnecting";
                     textBoxStatus.Foreground = Brushes.DarkGoldenrod;
                     buttonStart.IsEnabled = false;
@@ -86,11 +89,39 @@ namespace LogViewerWpf
                     textBoxStatus.Text = "Connected";
                     buttonStart.IsEnabled = true;
                     buttonStop.IsEnabled = false;
-                }); return Task.CompletedTask;
+                });
+                //ConnectToHub();
+                return Task.CompletedTask;
             };
+
+            Task.Run(async () =>
+            {
+                while (!closing)
+                {
+                    if (connection.State == HubConnectionState.Disconnected)
+                    {
+                        this.Dispatcher.Invoke(() =>
+                        {
+                            textBoxStatus.Text = "Disconnected";
+                            textBoxStatus.Foreground = Brushes.Red;
+                            buttonStart.IsEnabled = false;
+                            buttonStop.IsEnabled = false;
+                        });
+
+                        if (!await ConnectToHub())
+                        {
+                            await Task.Delay(1000);
+                        }
+                    }
+                    else if (connection.State == HubConnectionState.Connected)
+                    {
+                        await Task.Delay(5000);
+                    }
+                }
+            });
         }
 
-        private void ConnectToHub()
+        private async Task<bool> ConnectToHub()
         {
             while (true)
             {
@@ -98,25 +129,36 @@ namespace LogViewerWpf
                 {
                     connectionCancellationTokenSource = new CancellationTokenSource();
                     connectionCancellationToken = connectionCancellationTokenSource.Token;
-                    connection.StartAsync(connectionCancellationToken);
-                    this.Dispatcher.Invoke(async () =>
+                    await connection.StartAsync(connectionCancellationToken);
+                    var delayCount = 0;
+                    var maxDelay = 20;
+                    while (connection.State == HubConnectionState.Connecting && delayCount < maxDelay)
+                    {
+                        await Task.Delay(100);
+                        delayCount++;
+                    }
+                    if (connection.State == HubConnectionState.Connected && delayCount < maxDelay)
                     {
                         await LoadCustomers();
-                        buttonStart.IsEnabled = true;
-                        textBoxStatus.Text = "Connected";
-                        textBoxStatus.Foreground = Brushes.Green;
-                    });
-                    UpdateFeed("LogHost connected.");
-                    break;
+                        this.Dispatcher.Invoke(() =>
+                        {
+                            buttonStart.IsEnabled = true;
+                            textBoxStatus.Text = "Connected";
+                            textBoxStatus.Foreground = Brushes.Green;
+                        });
+                        UpdateFeed("LogHost connected.");
+                        return true;
+                    }
+                    return false;
                 }
                 catch when (connectionCancellationToken.IsCancellationRequested)
                 {
-                    break;
+                    return true; ;
                 }
                 catch (Exception ex)
                 {
                     UpdateFeed("LogHost disconnected - " + ex.Message);
-                    Task.Delay(1000);
+                    return false;
                 }
             }
         }
@@ -126,12 +168,12 @@ namespace LogViewerWpf
             textBoxStatus.Text = "Disconnected";
             textBoxStatus.Foreground = Brushes.Red;
             comboBoxCustomers.IsEnabled = false;
-            ConnectToHub();
+            BuildConnection(uri);
         }
 
         private void UpdateFeed(string info, bool includeTimestamp = true)
         {
-            Dispatcher.Invoke(async () =>
+            Dispatcher.Invoke(() =>
             {
                 listBoxFeed.Items.Insert(0, includeTimestamp ? string.Format("{0:yyyy-MM-dd hh:mm:ss} - {1}", DateTime.Now, info) : info);
                 if (listBoxFeed.Items.Count == maxLinesInListBoxFeed)
@@ -147,21 +189,21 @@ namespace LogViewerWpf
             {
                 try
                 {
-
                     var url = "https://localhost:7297/customers";
                     var response = await client.GetAsync(url);
                     var content = await response.Content.ReadAsStreamAsync();
                     var contentString = await response.Content.ReadAsStringAsync();
-
-                    var customers = new List<string>
+                    if (!string.IsNullOrEmpty(contentString))
                     {
-                        "All"
-                    };
-                    customers.AddRange(JsonConvert.DeserializeObject<List<string>>(contentString) ?? new List<string>());
-                    customers.ForEach(n => comboBoxCustomers.Items.Add(n));
-
-                    comboBoxCustomers.IsEnabled = true;
-                    comboBoxCustomers.SelectedIndex = 0;
+                        var customers = new List<string> { "All" };
+                        customers.AddRange(JsonConvert.DeserializeObject<List<string>>(contentString) ?? new List<string>());
+                        this.Dispatcher.Invoke(() =>
+                        {
+                            customers.ForEach(n => comboBoxCustomers.Items.Add(n));
+                            comboBoxCustomers.IsEnabled = true;
+                            comboBoxCustomers.SelectedIndex = 0;
+                        });
+                    }
                     return;
                 }
                 catch (Exception ex)
