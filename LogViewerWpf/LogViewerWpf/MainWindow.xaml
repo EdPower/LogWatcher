@@ -40,7 +40,13 @@
                         <ListBox Name="listBoxFeed" Margin="10" DockPanel.Dock="Top"/>
                     </DockPanel>
                     <DockPanel Grid.Column="1">
-                        <Label Content="Warnings and Errors:" Margin="10" DockPanel.Dock="Top" VerticalAlignment="Center"/>
+                        <DockPanel DockPanel.Dock="Top">
+                            <Label Content="Warnings and Errors:" Margin="10" DockPanel.Dock="Left" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Label Content="Since:" Margin="10"  VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <DatePicker Name="datePickerSince" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                            </StackPanel>
+                        </DockPanel>
                         <ListBox Name="listBoxErrors" Margin="10" DockPanel.Dock="Top"/>
                     </DockPanel>
                 </Grid>

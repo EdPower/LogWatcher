@@ -90,7 +90,6 @@ namespace LogViewerWpf
                     buttonStart.IsEnabled = true;
                     buttonStop.IsEnabled = false;
                 });
-                //ConnectToHub();
                 return Task.CompletedTask;
             };
 

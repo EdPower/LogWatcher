@@ -1,4 +1,5 @@
 using LogWatcher.Models;
+using System.Runtime.CompilerServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,22 +35,27 @@ timer.Elapsed += async (sender, e) =>
 };
 timer.Start();
 
+
 // these are the endpoint mappings
 
 // get all log records
 app.MapGet("/all", async (LogDbContext db) => await db.Log.ToListAsync());
 
-// get all log records since fromDt that match logLevel
-app.MapGet("/since", async (LogDbContext db, DateTime fromDt, int logLevel) =>
+// get all log records since fromDt at logLevel or higher for a customer
+app.MapGet("/since", async (LogDbContext db, DateTime fromDt, int logLevel, string customerId) =>
 {
-    return await db.Log.Where(n => (n.SentDt >= fromDt) && (((int)n.Level & logLevel) > 0)).ToListAsync();
+    return string.IsNullOrEmpty(customerId) || customerId.Equals("All")
+    ? await db.Log.Where(n => (n.SentDt >= fromDt) && ((int)n.Level >= logLevel)).ToListAsync()
+    : await db.Log.Where(n => (n.SentDt >= fromDt) && ((int)n.Level >= logLevel) && (n.CustomerId != null) && n.CustomerId.Equals(customerId)).ToListAsync();
 });
 
-// get count of all log records in database
-app.MapGet("/count/all", (LogDbContext db) => db.Log.Count());
-
-// get count of log records since fromDt
-app.MapGet("/count/since", (LogDbContext db, DateTime fromDt) => db.Log.Where(n => n.SentDt >= fromDt).Count());
+// get count of all log records in database for a customer
+app.MapGet("/count", (LogDbContext db, string customerId) =>
+{
+    return string.IsNullOrEmpty(customerId) || customerId.Equals("All")
+        ? db.Log.Count()
+        : db.Log.Where(n => n.CustomerId != null && n.CustomerId.Equals(customerId)).Count();
+});
 
 // get list of customers
 app.MapGet("/customers", async (LogDbContext db) => await db.Log.Select(n => n.CustomerId).Distinct().ToListAsync());
@@ -73,7 +79,7 @@ app.MapDelete("/delete/before", async (LogDbContext db, DateTime fromDt) =>
     await transaction.CommitAsync();
 });
 
-// delete all log records (handy for testing)
+// delete all log records (just used for testing)
 app.MapDelete("/delete/all", async (LogDbContext db) =>
 {
     await using var transaction = await db.Database.BeginTransactionAsync();
@@ -85,11 +91,18 @@ app.Run();
 
 public class SignalRHub : Hub
 {
-    public async IAsyncEnumerable<LogModel> LogUpdates(string customer, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    private DateTime lastChecked = DateTime.Now;
+
+    public async IAsyncEnumerable<LogModel> LogUpdates(string customer, int minLevel, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        using var logDbContext = new LogDbContext();
         while (!cancellationToken.IsCancellationRequested)
         {
-            yield return new LogModel() { CustomerId = customer, Level = LogWatcher.Models.LogLevel.Trace, Module = "heartbeat", SentDt = DateTime.Now, Message = "heartbeat" };
+            foreach (var logModel in logDbContext.Log.Where(n => (n.CustomerId != null) && n.CustomerId.Equals(customer) && ((int)n.Level >= minLevel) && (n.SentDt > lastChecked)))
+            {
+                yield return logModel;
+            }
+            lastChecked = DateTime.Now;
             await Task.Delay(1000, cancellationToken);
         }
     }
