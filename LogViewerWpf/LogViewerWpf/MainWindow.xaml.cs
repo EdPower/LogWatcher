@@ -35,17 +35,17 @@ namespace LogViewerWpf
         CancellationTokenSource logUpdatesCancellationTokenSource = new CancellationTokenSource();
         CancellationToken logUpdatesCancellationToken;
         int maxLinesInListBoxFeed = 20;
+        int maxLinesInListBoxError = 20;
         HubConnection connection;
         bool closing = false;
-        string uri;
+        Uri baseUri;
 
         public MainWindow()
         {
             client = new HttpClient();
             client.DefaultRequestHeaders.Accept.Clear();
             InitializeComponent();
-            uri = "https://localhost:7297/ReceiveLog";
-            //BuildConnection(uri);
+            baseUri = new Uri("https://localhost:7297/ReceiveLog");
         }
 
         private void BuildConnection(string uri)
@@ -167,17 +167,29 @@ namespace LogViewerWpf
             textBoxStatus.Text = "Disconnected";
             textBoxStatus.Foreground = Brushes.Red;
             comboBoxCustomers.IsEnabled = false;
-            BuildConnection(uri);
+            BuildConnection(baseUri.ToString());
         }
 
         private void UpdateFeed(string info, bool includeTimestamp = true)
         {
             Dispatcher.Invoke(() =>
             {
-                listBoxFeed.Items.Insert(0, includeTimestamp ? string.Format("{0:yyyy-MM-dd hh:mm:ss} - {1}", DateTime.Now, info) : info);
+                listBoxFeed.Items.Insert(0, includeTimestamp ? string.Format("{0:yyyy-MM-dd HH:mm:ss} - {1}", DateTime.Now, info) : info);
                 if (listBoxFeed.Items.Count == maxLinesInListBoxFeed)
                 {
                     listBoxFeed.Items.RemoveAt(maxLinesInListBoxFeed - 1);
+                }
+            });
+        }
+
+        private void UpdateErrors(string info)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                listBoxErrors.Items.Insert(0, info);
+                if (listBoxErrors.Items.Count == maxLinesInListBoxError)
+                {
+                    listBoxErrors.Items.RemoveAt(maxLinesInListBoxError - 1);
                 }
             });
         }
@@ -188,8 +200,8 @@ namespace LogViewerWpf
             {
                 try
                 {
-                    var url = "https://localhost:7297/customers";
-                    var response = await client.GetAsync(url);
+                    var uri = new Uri(baseUri, "customers");
+                    var response = await client.GetAsync(uri.ToString());
                     var content = await response.Content.ReadAsStreamAsync();
                     var contentString = await response.Content.ReadAsStringAsync();
                     if (!string.IsNullOrEmpty(contentString))
@@ -220,22 +232,63 @@ namespace LogViewerWpf
             connectionCancellationTokenSource.Cancel();
         }
 
-        private void StartReceiving(string customer)
+        private void ReceiveFeed(string customer, int minLevel, CancellationToken cancellationToken)
         {
             Task.Run(async () =>
             {
-                logUpdatesCancellationTokenSource = new CancellationTokenSource();
-                logUpdatesCancellationToken = logUpdatesCancellationTokenSource.Token;
-                var logModelStream = connection.StreamAsync<LogModel>("LogUpdates", customer, logUpdatesCancellationToken);
+                var logModelStream = connection.StreamAsync<LogModel>("LogUpdates", customer, minLevel, cancellationToken);
                 await foreach (var model in logModelStream)
                 {
                     {
-                        var modelString = string.Format("{0:yyyy-MM-dd hh:mm:ss} - {1} {2} {3} {4}", model.CustomerId, model.SentDt, model.Module, model.Level, model.Message);
+                        var modelString = string.Format("{0:yyyy-MM-dd HH:mm:ss} - {1} {2} {3} {4}", model.CustomerId, model.SentDt, model.Module, model.Level, model.Message);
                         UpdateFeed(modelString, false);
                     }
                 }
             });
+        }
 
+        private void GetLastErrors(string customer, CancellationToken cancellationToken)
+        {
+            Task.Run(async () =>
+            {
+                var uriBuilder = new UriBuilder(new Uri(baseUri, "since"));
+                var lastChecked = DateTime.Now.AddDays(-1);
+                while (true)
+                {
+                    try
+                    {
+                        var kvps = new List<KeyValuePair<string, string>>
+                        {
+                            new KeyValuePair<string, string>("fromDt", lastChecked.ToString("yyyy-MM-ddTHH:mm:ss")),
+                            new KeyValuePair<string, string>("logLevel",((int)LogLevel.Warning).ToString()),
+                            new KeyValuePair<string, string>("customerId", customer )
+                        };
+
+                        uriBuilder.Query = string.Join("&", kvps.Select(n => string.Join("=", n.Key, n.Value)));
+
+                        var response = await client.GetAsync(uriBuilder.Uri.AbsoluteUri);
+                        var content = await response.Content.ReadAsStreamAsync();
+                        var contentString = await response.Content.ReadAsStringAsync();
+                        if (!string.IsNullOrEmpty(contentString))
+                        {
+                            foreach (var model in JsonConvert.DeserializeObject<List<LogModel>>(contentString) ?? new List<LogModel>())
+                            {
+                                this.Dispatcher.Invoke(() =>
+                                    {
+                                        var modelString = string.Format("{0:yyyy-MM-dd HH:mm:ss} - {1} {2} {3} {4}", model.CustomerId, model.SentDt, model.Module, model.Level, model.Message);
+                                        UpdateErrors(modelString);
+                                    });
+                            }
+                        }
+                        lastChecked = DateTime.Now;
+                    }
+                    catch (Exception ex)
+                    {
+                        UpdateFeed(ex.Message);
+                    }
+                    await Task.Delay(5000);
+                }
+            });
         }
 
         private void buttonStart_Click(object sender, RoutedEventArgs e)
@@ -243,8 +296,17 @@ namespace LogViewerWpf
             buttonStart.IsEnabled = false;
             buttonStop.IsEnabled = true;
             comboBoxCustomers.IsEnabled = false;
+            checkBoxError.IsEnabled = false;
+            checkBoxWarning.IsEnabled = false;
+            checkBoxInformation.IsEnabled = false;
+            checkBoxTrace.IsEnabled = false;
             string customer = comboBoxCustomers.SelectedItem.ToString() ?? "All";
-            StartReceiving(customer);
+            int minLevel = checkBoxTrace.IsChecked ?? false ? (int)LogLevel.Trace : 0;
+            minLevel += checkBoxInformation.IsChecked ?? false ? (int)LogLevel.Information : 0;
+            minLevel += checkBoxWarning.IsChecked ?? false ? (int)LogLevel.Warning : 0;
+            minLevel += checkBoxError.IsChecked ?? false ? (int)LogLevel.Error : 0;
+            ReceiveFeed(customer, minLevel, logUpdatesCancellationToken);
+            GetLastErrors(customer, logUpdatesCancellationToken);
         }
 
         private void buttonStop_Click(object sender, RoutedEventArgs e)
@@ -253,6 +315,10 @@ namespace LogViewerWpf
             buttonStop.IsEnabled = false;
             comboBoxCustomers.IsEnabled = true;
             buttonStart.IsEnabled = true;
+            checkBoxTrace.IsEnabled = true;
+            checkBoxInformation.IsEnabled = true;
+            checkBoxWarning.IsEnabled = true;
+            checkBoxError.IsEnabled = true;
         }
     }
 }

@@ -98,7 +98,7 @@ public class SignalRHub : Hub
         using var logDbContext = new LogDbContext();
         while (!cancellationToken.IsCancellationRequested)
         {
-            foreach (var logModel in logDbContext.Log.Where(n => (n.CustomerId != null) && n.CustomerId.Equals(customer) && ((int)n.Level >= minLevel) && (n.SentDt > lastChecked)))
+            foreach (var logModel in logDbContext.Log.Where(n => (customer.Equals("All") || ((n.CustomerId != null) && n.CustomerId.Equals(customer)) && ((int)n.Level & minLevel) > 0) && (n.SentDt > lastChecked)))
             {
                 yield return logModel;
             }

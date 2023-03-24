@@ -41,6 +41,7 @@ namespace LogSenderWpf
 
         private async Task StartSending(CancellationToken token)
         {
+            var rnd = new Random();
             var url = "https://localhost:7297/add";
             while (!token.IsCancellationRequested)
             {
@@ -54,7 +55,7 @@ namespace LogSenderWpf
                 {
                     AddStatus(record.SentDt.ToString("yyyy-MM-dd HH:mm:ss") + " - " + errorString);
                 }
-                await Task.Delay(500);
+                await Task.Delay(rnd.Next(200, 3000));
             }
         }
 
