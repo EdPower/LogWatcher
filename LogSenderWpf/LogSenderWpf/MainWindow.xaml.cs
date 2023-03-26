@@ -15,6 +15,7 @@ namespace LogSenderWpf
     {
         HttpClient client;
         CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        Random rnd = new Random();
 
         public MainWindow()
         {
@@ -49,25 +50,27 @@ namespace LogSenderWpf
                 var (isSuccessful, errorString) = await SendLogRecord(url, record, token);
                 if (isSuccessful)
                 {
-                    AddStatus(record.SentDt.ToString("yyyy-MM-dd HH:mm:ss") + " - " + record.Level.ToString());
+                    AddStatus(record.SentDt.ToString("yyyy-MM-dd HH:mm:ss") + "  " + record.CustomerId + "  " + record.Level.ToString());
                 }
                 else
                 {
-                    AddStatus(record.SentDt.ToString("yyyy-MM-dd HH:mm:ss") + " - " + errorString);
+                    AddStatus(record.SentDt.ToString("yyyy-MM-dd HH:mm:ss") + "  " + errorString);
                 }
-                await Task.Delay(rnd.Next(200, 3000));
+                await Task.Delay(rnd.Next(200, 2000));
             }
         }
 
+        // add record to status listbox, keeping only last 20 records
         private void AddStatus(string status)
         {
             listBoxStatus.Items.Insert(0, status);
             if (listBoxStatus.Items.Count > 20)
             {
-                listBoxStatus.Items.RemoveAt(19);
+                listBoxStatus.Items.RemoveAt(20);
             }
         }
 
+        // send log record to log host
         private async Task<(bool, string)> SendLogRecord(string url, LogModel record, CancellationToken token)
         {
             try
@@ -82,29 +85,51 @@ namespace LogSenderWpf
             }
         }
 
+        // create new record
         private LogModel CreateRecord()
         {
+            var level=GetRandomLogLevel();
             var logModel = new LogModel()
             {
-                CustomerId = "cust1",
-                Message = "test",
+                CustomerId = GetRandomCustomerId(),
+                Message = GetMessage(level),
                 Module = "module1",
                 SentDt = DateTime.Now,
-                Level = GetRandomLogLevel()
+                Level = level
             };
             return logModel;
         }
 
-        private static Random rnd = new Random();
+        private string GetRandomCustomerId()
+        {
+            return "Customer-" + rnd.Next(1, 5).ToString();
+        }
+
         private LogLevel GetRandomLogLevel()
         {
             return rnd.Next(1, 100) switch
             {
-                > 0 and <= 7 => LogLevel.Error,
-                > 7 and <= 15 => LogLevel.Warning,
-                > 15 and <= 90 => LogLevel.Information,
+                > 0 and <= 15 => LogLevel.Error,
+                > 15 and <= 35 => LogLevel.Warning,
+                > 35 and <= 90 => LogLevel.Information,
                 _ => LogLevel.Trace,
             };
+        }
+
+        private string GetMessage(LogLevel level)
+        {
+            switch (level)
+            {
+                case LogLevel.Information:
+                    return "General information message";
+                case LogLevel.Warning:
+                    return "Alert - warning";
+                case LogLevel.Error:
+                    return "An error occured";
+                case LogLevel.Trace:
+                default:
+                    return "Low-level trace data";
+            }
         }
     }
 }

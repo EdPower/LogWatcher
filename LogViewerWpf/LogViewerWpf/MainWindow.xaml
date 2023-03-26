@@ -9,7 +9,11 @@
         Closing="Window_Closing" 
         Title="MainWindow" Height="500" Width="1000">
     <Grid>
-        <DockPanel>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <DockPanel Grid.Row="0">
             <DockPanel DockPanel.Dock="Top">
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" >
                     <Label Content="Customer:" VerticalAlignment="Center" Margin="10"/>
@@ -22,8 +26,8 @@
                     <TextBox Name="textBoxStatus" Width="200" VerticalAlignment="Center"  Margin="10"/>
                 </StackPanel>
             </DockPanel>
-            <Border Margin="10" BorderBrush="Gray" BorderThickness="1">
-                <Grid DockPanel.Dock="Top">
+            <Border Margin="10" BorderBrush="Gray" BorderThickness="1" DockPanel.Dock="Top">
+                <Grid >
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
@@ -37,20 +41,35 @@
                             <CheckBox Name="checkBoxWarning" Content="Warning" Margin="10" IsChecked="true" VerticalAlignment="Center" />
                             <CheckBox Name="checkBoxError" Content="Error" Margin="10" IsChecked="true" VerticalAlignment="Center" />
                         </WrapPanel>
-                        <ListBox Name="listBoxFeed" Margin="10" DockPanel.Dock="Top"/>
+                        <Grid DockPanel.Dock="Top">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <ListBox Name="listBoxFeed" Margin="10" Grid.Row="0" DockPanel.Dock="Top" SelectionChanged="listBoxFeed_SelectionChanged"/>
+                            <Border BorderBrush="Gray" BorderThickness="1" Margin="10" Grid.Row="1">
+                                <TextBlock Name="textBlockFeedRecord"  Height="50" Margin="10" TextWrapping="Wrap" />
+                            </Border>
+                        </Grid>
                     </DockPanel>
                     <DockPanel Grid.Column="1">
                         <DockPanel DockPanel.Dock="Top">
-                            <Label Content="Warnings and Errors:" Margin="10" DockPanel.Dock="Left" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Label Content="Since:" Margin="10"  VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                                <DatePicker Name="datePickerSince" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                            </StackPanel>
+                            <Label Content="Last 20 Warnings and Errors:" Margin="10" DockPanel.Dock="Left" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                         </DockPanel>
-                        <ListBox Name="listBoxErrors" Margin="10" DockPanel.Dock="Top"/>
+                        <Grid DockPanel.Dock="Top">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <ListBox Name="listBoxErrors" Margin="10" Grid.Row="0" SelectionChanged="listBoxErrors_SelectionChanged"/>
+                            <Border BorderBrush="Gray" BorderThickness="1" Margin="10" Grid.Row="1">
+                                <TextBlock Name="textBlockErrorRecord"  Height="50" Margin="10" TextWrapping="Wrap" />
+                            </Border>
+                        </Grid>
                     </DockPanel>
                 </Grid>
             </Border>
         </DockPanel>
+
     </Grid>
 </Window>
