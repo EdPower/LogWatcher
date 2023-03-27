@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LogWatcher.Models
 {
@@ -10,12 +9,10 @@ namespace LogWatcher.Models
         Information = 1,
         Warning = 2,
         Error = 4
-    }   
-    
-    //[Table("Log")]
-    public class LogModel
+    }
+
+    public record LogModel
     {
-        [Key]
         public int Id { get; set; }
         public string? CustomerId { get; set; }
         public DateTime SentDt { get; set; }

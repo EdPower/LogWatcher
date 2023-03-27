@@ -88,15 +88,14 @@ namespace LogSenderWpf
         // create new record
         private LogModel CreateRecord()
         {
-            var level=GetRandomLogLevel();
             var logModel = new LogModel()
             {
                 CustomerId = GetRandomCustomerId(),
-                Message = GetMessage(level),
                 Module = "module1",
                 SentDt = DateTime.Now,
-                Level = level
+                Level = GetRandomLogLevel()
             };
+            logModel.Message = GetMessage(logModel.Level);
             return logModel;
         }
 

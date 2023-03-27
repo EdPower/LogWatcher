@@ -5,7 +5,7 @@
         public LogDbContext() { }
         public LogDbContext(DbContextOptions options) : base(options) { }
 
-        public DbSet<LogModel> Log { get; set; } = null!; // initialize with null-forgiving operator to prevent compiler warning 
+        public DbSet<LogModel> Log { get; set; } = null!; // use null-forgiving operator to prevent compiler warning 
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -20,8 +20,8 @@
             modelBuilder.Entity<LogModel>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.Id).IsUnique();
                 entity.HasIndex(e => e.SentDt);
+                entity.HasIndex(e => e.CustomerId);
             });
             base.OnModelCreating(modelBuilder);
         }

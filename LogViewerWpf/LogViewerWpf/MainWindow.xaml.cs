@@ -3,24 +3,14 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
-using System.Runtime.Serialization.Json;
-using System.Text;
+using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using static System.Net.WebRequestMethods;
 
 namespace LogViewerWpf
 {
@@ -30,12 +20,12 @@ namespace LogViewerWpf
     public partial class MainWindow : Window
     {
         HttpClient client;
-        CancellationTokenSource cancellationTokenSource;
+        CancellationTokenSource cancellationTokenSource = null!;
         CancellationToken cancellationToken;
         int maxLinesInListBoxFeed = 20;
         int maxLinesInListBoxError = 20;
-        HubConnection connection;
-        bool closing = false;
+        HubConnection connection = null!;
+        volatile bool closing = false;
         Uri baseUri;
 
         public MainWindow()
@@ -46,6 +36,7 @@ namespace LogViewerWpf
             baseUri = new Uri("https://localhost:7297/ReceiveLog");
         }
 
+        // connect to SignalR hub
         private void BuildConnection(string uri)
         {
             connection = new HubConnectionBuilder()
@@ -53,6 +44,7 @@ namespace LogViewerWpf
                 .WithAutomaticReconnect()
                 .Build();
 
+            // update UI if hub connection is closed
             connection.Closed += (Exception? ex) =>
             {
                 this.Dispatcher.Invoke(() =>
@@ -62,10 +54,10 @@ namespace LogViewerWpf
                     buttonStart.IsEnabled = false;
                     buttonStop.IsEnabled = false;
                 });
-
                 return Task.CompletedTask;
             };
 
+            // update UI when reconnecting to hub
             connection.Reconnecting += (Exception? ex) =>
             {
                 this.Dispatcher.Invoke(() =>
@@ -79,6 +71,7 @@ namespace LogViewerWpf
                 return Task.CompletedTask;
             };
 
+            // update UI when hub is reconnected
             connection.Reconnected += (string? s) =>
             {
                 this.Dispatcher.Invoke(() =>
@@ -91,6 +84,7 @@ namespace LogViewerWpf
                 return Task.CompletedTask;
             };
 
+            // try to connect to hub and periodically check to see if connection was dropped
             Task.Run(async () =>
             {
                 while (!closing)
@@ -107,32 +101,40 @@ namespace LogViewerWpf
 
                         if (!await ConnectToHub())
                         {
+                            // wait a second before trying to connect again
                             await Task.Delay(1000);
                         }
                     }
                     else if (connection.State == HubConnectionState.Connected)
                     {
+                        // wait five seconds before checking to see if disconnected
                         await Task.Delay(5000);
                     }
                 }
             });
         }
 
+        // Attempt to make the actual connection
         private async Task<bool> ConnectToHub()
         {
             while (true)
             {
                 try
                 {
+                    // try the connection
                     await connection.StartAsync();
-                    var delayCount = 0;
-                    var maxDelay = 20;
-                    while (connection.State == HubConnectionState.Connecting && delayCount < maxDelay)
+                    var attempCount = 0;
+                    var maxAttempts = 20;
+
+                    // loop while connecting up to maxAttempts attempts
+                    while (connection.State == HubConnectionState.Connecting && attempCount < maxAttempts)
                     {
                         await Task.Delay(100);
-                        delayCount++;
+                        attempCount++;
                     }
-                    if (connection.State == HubConnectionState.Connected && delayCount < maxDelay)
+
+                    // if connected before reaching maxAttempts then update customer list and return success
+                    if (connection.State == HubConnectionState.Connected && attempCount < maxAttempts)
                     {
                         await LoadCustomers();
                         this.Dispatcher.Invoke(() =>
@@ -144,11 +146,12 @@ namespace LogViewerWpf
                         UpdateFeed("LogHost connected.");
                         return true;
                     }
+                    // otherwise return failed to connect
                     return false;
                 }
                 catch (Exception ex)
                 {
-                    UpdateFeed("LogHost disconnected - " + ex.Message);
+                    UpdateFeed("LogHost connection error: " + ex.Message);
                     return false;
                 }
             }
@@ -162,6 +165,7 @@ namespace LogViewerWpf
             BuildConnection(baseUri.ToString());
         }
 
+        // update feed listbox with model record
         private void UpdateFeed(LogModel model)
         {
             var modelString = string.Format("{0:yyyy-MM-dd HH:mm:ss} - {1} {2} {3}: {4}", model.CustomerId, model.SentDt, model.Module, model.Level, model.Message);
@@ -176,6 +180,7 @@ namespace LogViewerWpf
             });
         }
 
+        // update feed listbox with info string
         private void UpdateFeed(string info)
         {
             Dispatcher.Invoke(() =>
@@ -188,12 +193,18 @@ namespace LogViewerWpf
             });
         }
 
+        // update error listbox
         private void UpdateErrors(LogModel model)
         {
             Dispatcher.Invoke(() =>
             {
                 var modelString = string.Format("{0:yyyy-MM-dd HH:mm:ss} - {1} {2} {3}", model.CustomerId, model.SentDt, model.Module, model.Message);
-                listBoxErrors.Items.Insert(0, new ListBoxItem() { Content = modelString, Tag = model, Foreground = model.Level == LogLevel.Error ? Brushes.Red : Brushes.Black });
+                listBoxErrors.Items.Insert(0, new ListBoxItem()
+                {
+                    Content = modelString,
+                    Tag = model,
+                    FontWeight = model.Level == LogLevel.Error ? FontWeights.Bold : FontWeights.Normal
+                }); ;
 
                 if (listBoxErrors.Items.Count == maxLinesInListBoxError)
                 {
@@ -202,6 +213,7 @@ namespace LogViewerWpf
             });
         }
 
+        // load customer combo box
         private async Task LoadCustomers()
         {
             while (true)
@@ -229,10 +241,12 @@ namespace LogViewerWpf
                 {
                     UpdateFeed(ex.Message);
                 }
+                // wait a second and try again
                 await Task.Delay(1000);
             }
         }
 
+        // signal hub to stop sending updates when shutting down
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             closing = true;
@@ -242,6 +256,7 @@ namespace LogViewerWpf
             }
         }
 
+        // tell hub to start sending updates
         private async Task ReceiveFeed(string customer, int minLevel)
         {
             var logModelStream = connection.StreamAsync<LogModel>("GetLogUpdates", customer, minLevel);
@@ -251,33 +266,43 @@ namespace LogViewerWpf
             }
         }
 
-        private async Task GetLastWarningsAndErrors(string customer, CancellationToken cancellationToken)
+        // poll host for recently uploaded warnings and errors
+        private async Task GetLastWarningsAndErrors(string customer, CancellationToken cancellationToken, int maxRecordsToTake)
         {
-            var uriBuilder = new UriBuilder(new Uri(baseUri, "since"));
+            // start by looking for anything in the last 24 hours
+            // but only get last maxRecordsToTake records (saves downloading a large amount of records just to get lastest)
             var lastChecked = DateTime.Now.AddDays(-1);
+
+            var uriBuilder = new UriBuilder(new Uri(baseUri, "since"));
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
+                    // build list of parameters
                     var kvps = new List<KeyValuePair<string, string>>
                         {
                             new KeyValuePair<string, string>("fromDt", lastChecked.ToString("yyyy-MM-ddTHH:mm:ss")),
                             new KeyValuePair<string, string>("logLevel",((int)LogLevel.Warning).ToString()),
-                            new KeyValuePair<string, string>("customerId", customer )
+                            new KeyValuePair<string, string>("customerId", customer ),
+                            new KeyValuePair<string, string>("lastCount", maxRecordsToTake.ToString())
                         };
 
+                    // build query from parameter list
                     uriBuilder.Query = string.Join("&", kvps.Select(n => string.Join("=", n.Key, n.Value)));
+
+                    // query host
                     var response = await client.GetAsync(uriBuilder.Uri.AbsoluteUri);
 
+                    // extract response contents
                     var content = await response.Content.ReadAsStreamAsync();
                     var contentString = await response.Content.ReadAsStringAsync();
                     if (!string.IsNullOrEmpty(contentString))
                     {
+                        // convert string to json to extract model records and update error listbox
                         foreach (var model in JsonConvert.DeserializeObject<List<LogModel>>(contentString) ?? new List<LogModel>())
                         {
                             this.Dispatcher.Invoke(() =>
                                 {
-                                    var modelString = string.Format("{0:yyyy-MM-dd HH:mm:ss} - {1} {2} {3}", model.CustomerId, model.SentDt, model.Module, model.Message);
                                     UpdateErrors(model);
                                 });
                         }
@@ -288,12 +313,14 @@ namespace LogViewerWpf
                 {
                     UpdateFeed(ex.Message);
                 }
+                // wait 2 seconds and check again
                 await Task.Delay(2000);
             }
         }
 
         private void buttonStart_Click(object sender, RoutedEventArgs e)
         {
+            // update UI
             buttonStart.IsEnabled = false;
             buttonStop.IsEnabled = true;
             comboBoxCustomers.IsEnabled = false;
@@ -301,23 +328,34 @@ namespace LogViewerWpf
             checkBoxWarning.IsEnabled = false;
             checkBoxInformation.IsEnabled = false;
             checkBoxTrace.IsEnabled = false;
+
+            // start receiving feed
             string customer = comboBoxCustomers.SelectedItem.ToString() ?? "All";
             int minLevel = checkBoxTrace.IsChecked ?? false ? (int)LogLevel.Trace : 0;
             minLevel += checkBoxInformation.IsChecked ?? false ? (int)LogLevel.Information : 0;
             minLevel += checkBoxWarning.IsChecked ?? false ? (int)LogLevel.Warning : 0;
             minLevel += checkBoxError.IsChecked ?? false ? (int)LogLevel.Error : 0;
+            Task.Run(async () =>
+            {
+                await ReceiveFeed(customer, minLevel);
+            });
 
-            Task.Run(async () => { await ReceiveFeed(customer, minLevel); });
-
+            // start receiving latest warnings and errors
             cancellationTokenSource = new CancellationTokenSource();
             cancellationToken = cancellationTokenSource.Token;
-            Task.Run(async () => { await GetLastWarningsAndErrors(customer, cancellationToken); }, cancellationToken);
+            Task.Run(async () =>
+            {
+                await GetLastWarningsAndErrors(customer, cancellationToken, maxLinesInListBoxError);
+            }, cancellationToken);
         }
 
         private void buttonStop_Click(object sender, RoutedEventArgs e)
         {
+            // cancel feed and error updates
             cancellationTokenSource.Cancel();
             connection.InvokeAsync("StopLogUpdates");
+
+            // update UI
             buttonStop.IsEnabled = false;
             comboBoxCustomers.IsEnabled = true;
             buttonStart.IsEnabled = true;
@@ -327,6 +365,7 @@ namespace LogViewerWpf
             checkBoxError.IsEnabled = true;
         }
 
+        //  update textblock when clicking on listBoxErrors item
         private void listBoxErrors_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var selectedItem = listBoxErrors.SelectedItem as ListBoxItem;
@@ -337,6 +376,7 @@ namespace LogViewerWpf
             }
         }
 
+        //  update textblock when clicking on listBoxFeed item
         private void listBoxFeed_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var selectedItem = listBoxFeed.SelectedItem as ListBoxItem;
