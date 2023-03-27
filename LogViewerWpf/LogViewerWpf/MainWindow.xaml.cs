@@ -99,7 +99,7 @@ namespace LogViewerWpf
                             buttonStop.IsEnabled = false;
                         });
 
-                        if (!await ConnectToHub())
+                        if (!await ConnectToHubAsync())
                         {
                             // wait a second before trying to connect again
                             await Task.Delay(1000);
@@ -115,7 +115,7 @@ namespace LogViewerWpf
         }
 
         // Attempt to make the actual connection
-        private async Task<bool> ConnectToHub()
+        private async Task<bool> ConnectToHubAsync()
         {
             while (true)
             {
@@ -136,7 +136,7 @@ namespace LogViewerWpf
                     // if connected before reaching maxAttempts then update customer list and return success
                     if (connection.State == HubConnectionState.Connected && attempCount < maxAttempts)
                     {
-                        await LoadCustomers();
+                        await LoadCustomersAsync();
                         this.Dispatcher.Invoke(() =>
                         {
                             buttonStart.IsEnabled = true;
@@ -214,7 +214,7 @@ namespace LogViewerWpf
         }
 
         // load customer combo box
-        private async Task LoadCustomers()
+        private async Task LoadCustomersAsync()
         {
             while (true)
             {
@@ -257,7 +257,7 @@ namespace LogViewerWpf
         }
 
         // tell hub to start sending updates
-        private async Task ReceiveFeed(string customer, int minLevel)
+        private async Task ReceiveFeedAsync(string customer, int minLevel)
         {
             var logModelStream = connection.StreamAsync<LogModel>("GetLogUpdates", customer, minLevel);
             await foreach (var model in logModelStream)
@@ -267,7 +267,7 @@ namespace LogViewerWpf
         }
 
         // poll host for recently uploaded warnings and errors
-        private async Task GetLastWarningsAndErrors(string customer, CancellationToken cancellationToken, int maxRecordsToTake)
+        private async Task GetLastWarningsAndErrorsAsync(string customer, CancellationToken cancellationToken, int maxRecordsToTake)
         {
             // start by looking for anything in the last 24 hours
             // but only get last maxRecordsToTake records (saves downloading a large amount of records just to get lastest)
@@ -337,7 +337,7 @@ namespace LogViewerWpf
             minLevel += checkBoxError.IsChecked ?? false ? (int)LogLevel.Error : 0;
             Task.Run(async () =>
             {
-                await ReceiveFeed(customer, minLevel);
+                await ReceiveFeedAsync(customer, minLevel);
             });
 
             // start receiving latest warnings and errors
@@ -345,7 +345,7 @@ namespace LogViewerWpf
             cancellationToken = cancellationTokenSource.Token;
             Task.Run(async () =>
             {
-                await GetLastWarningsAndErrors(customer, cancellationToken, maxLinesInListBoxError);
+                await GetLastWarningsAndErrorsAsync(customer, cancellationToken, maxLinesInListBoxError);
             }, cancellationToken);
         }
 

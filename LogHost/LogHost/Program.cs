@@ -55,7 +55,7 @@ app.MapPost("/add", async (LogDbContext db, LogModel logModel) =>
 });
 
 
-// setup a timer to delete old records once an hour
+// start a timer to delete old records once an hour
 var timer = new System.Timers.Timer(TimeSpan.FromHours(1));
 timer.Elapsed += async (sender, e) =>
 {

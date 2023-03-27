@@ -30,7 +30,7 @@ namespace LogSenderWpf
             CancellationToken cancellationToken = cancellationTokenSource.Token;
             buttonStart.IsEnabled = false;
             buttonStop.IsEnabled = true;
-            await StartSending(cancellationToken);
+            await StartSendingAsync(cancellationToken);
         }
 
         private void buttonStop_Click(object sender, RoutedEventArgs e)
@@ -40,7 +40,7 @@ namespace LogSenderWpf
             buttonStop.IsEnabled = false;
         }
 
-        private async Task StartSending(CancellationToken token)
+        private async Task StartSendingAsync(CancellationToken token)
         {
             var rnd = new Random();
             var url = "https://localhost:7297/add";

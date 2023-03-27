@@ -13,7 +13,7 @@
         }
 
         // this is called by client to start receiving log updates, filtered by customer and loglevel
-        public async IAsyncEnumerable<LogModel> GetLogUpdates(string customer, int levelFilter)
+        public async IAsyncEnumerable<LogModel> GetLogUpdatesAsync(string customer, int levelFilter)
         {
             cancellationTokenSource = new CancellationTokenSource();
             cancellationToken = cancellationTokenSource.Token;
