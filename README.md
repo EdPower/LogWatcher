@@ -1,6 +1,6 @@
 # LogWatcher
 
-LogWatcher is the code for the csharplog.com blog where I discuss a .Net Core app suite that captures and views log records so that support and dev staff can monitor log and trace activity in real time from remote customer applications.
+LogWatcher is the code for an upcoming blog where I discuss a .Net Core app suite that captures and views log records so that support and dev staff can monitor log and trace activity in real time from remote customer applications.
 
 ## Overview
 Logwatcher is comprised of LogHost, which is a .Net 7 Core host of several minimal web APIs. These receive log records from remote applications and echo these back via HTTP and SignalR endpoints. LogHost manages the records in a local Sqlite database using Entity Framework.
